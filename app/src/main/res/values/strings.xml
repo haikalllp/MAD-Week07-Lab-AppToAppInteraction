@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">ApptoApp</string>
+    <string name="title_activity_thumbnail">Thumbnail</string>
+    <string name="title_activity_thumbnail_compose">ThumbnailCompose</string>
+    <string name="title_activity_pick_contact_compose">PickContactCompose</string>
+</resources>
