@@ -122,36 +122,19 @@ fun PickContactScreen() {
 
         Spacer(Modifier.height(24.dp))
 
-        // Display contact photo if available, otherwise show default placeholder
+        // make a local copy of contactDetails for null-safety
         val details = contactDetails
 
-        // Prepare the bitmap to display outside of composable invocations. This avoids
-        // wrapping composable calls with try/catch (which Compose lint forbids).
-        val imageBitmapToShow: Bitmap? = remember(details) {
-            try {
-                if (details?.contactImageBitmap != null && !details.contactImageBitmap.isRecycled) {
-                    details.contactImageBitmap
-                } else {
-                    BitmapFactory.decodeResource(
-                        context.resources,
-                        R.mipmap.ic_launcher
-                    )
-                }
-            } catch (e: Exception) {
-                null
-            }
-        }
-
-        // Now call composable functions without try/catch
-        if (imageBitmapToShow != null) {
+        // Show the contact photo if available, otherwise show a text placeholder
+        if (details?.contactImageBitmap != null) {
             Image(
-                bitmap = imageBitmapToShow.asImageBitmap(),
+                bitmap = details.contactImageBitmap.asImageBitmap(),
                 contentDescription = "Contact Photo",
                 modifier = Modifier.size(120.dp)
             )
         } else {
-            // If no bitmap was prepared, show a fallback text or empty placeholder
-            Text(text = "Photo unavailable", modifier = Modifier.size(120.dp))
+            // Simple text placeholder when no photo is available
+            Text(text = "No Photo")
         }
 
         Spacer(Modifier.height(16.dp))
@@ -276,14 +259,9 @@ private fun loadContactDetails(
     contactBitmap = photoUri?.let { uriString ->
         try {
             val uri = uriString.toUri()
-            // Use ImageDecoder on API 28+, fallback to openInputStream + BitmapFactory
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                val src = ImageDecoder.createSource(resolver, uri)
-                ImageDecoder.decodeBitmap(src)
-            } else {
-                resolver.openInputStream(uri)?.use { stream ->
-                    BitmapFactory.decodeStream(stream)
-                }
+            // Convert URI to Bitmap
+            resolver.openInputStream(uri)?.use { stream ->
+                BitmapFactory.decodeStream(stream)
             }
         } catch (e: IOException) {
             null
