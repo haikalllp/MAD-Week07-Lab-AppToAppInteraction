@@ -17,7 +17,8 @@
             android:name=".PickContactCompose"
             android:exported="false"
             android:label="@string/title_activity_pick_contact_compose"
-            android:theme="@style/Theme.ApptoApp" />
+            android:theme="@style/Theme.ApptoApp"
+            android:parentActivityName=".MainActivity" />
         <activity
             android:name=".PickContact"
             android:exported="false"

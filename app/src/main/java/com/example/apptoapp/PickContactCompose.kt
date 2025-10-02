@@ -5,10 +5,11 @@ import android.content.pm.PackageManager
 import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
-import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -24,13 +25,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -38,9 +38,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import com.example.apptoapp.ui.theme.ApptoAppTheme
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import java.io.IOException
 
 class PickContactCompose : ComponentActivity() {
@@ -74,19 +73,10 @@ fun PickContactScreen() {
                     // Load contact details using the provided contactUri and then set the state
                     val details = loadContactDetails(context.contentResolver, contactUri)
                     
-                    // Create a new ContactDetails object to ensure proper state update
-                    val newDetails = ContactDetails(
-                        name = details.name,
-                        phoneNumber = details.phoneNumber,
-                        email = details.email,
-                        dateOfBirth = details.dateOfBirth,
-                        postalAddress = details.postalAddress,
-                        contactImageUri = details.contactImageUri,
-                        contactImageBitmap = details.contactImageBitmap
-                    )
+                    // Directly update the state with the loaded details
+                    contactDetails = details
                     
-                    contactDetails = newDetails
-                    if (newDetails.name == null && newDetails.phoneNumber == null) {
+                    if (details.name == null && details.phoneNumber == null) {
                         Toast.makeText(context, "No details found", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
@@ -134,27 +124,38 @@ fun PickContactScreen() {
 
         // Display contact photo if available, otherwise show default placeholder
         val details = contactDetails
-        
-        if (details?.contactImageBitmap != null) {
+
+        // Prepare the bitmap to display outside of composable invocations. This avoids
+        // wrapping composable calls with try/catch (which Compose lint forbids).
+        val imageBitmapToShow: Bitmap? = remember(details) {
+            try {
+                if (details?.contactImageBitmap != null && !details.contactImageBitmap.isRecycled) {
+                    details.contactImageBitmap
+                } else {
+                    BitmapFactory.decodeResource(
+                        context.resources,
+                        R.mipmap.ic_launcher
+                    )
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        // Now call composable functions without try/catch
+        if (imageBitmapToShow != null) {
             Image(
-                bitmap = details.contactImageBitmap.asImageBitmap(),
+                bitmap = imageBitmapToShow.asImageBitmap(),
                 contentDescription = "Contact Photo",
                 modifier = Modifier.size(120.dp)
             )
         } else {
-            // No photo available, show default placeholder
-            Image(
-                bitmap = BitmapFactory.decodeResource(
-                    context.resources,
-                    R.mipmap.ic_launcher
-                ).asImageBitmap(),
-                contentDescription = "Default Contact Photo",
-                modifier = Modifier.size(120.dp)
-            )
+            // If no bitmap was prepared, show a fallback text or empty placeholder
+            Text(text = "Photo unavailable", modifier = Modifier.size(120.dp))
         }
-        
+
         Spacer(Modifier.height(16.dp))
-        
+
         Text(text = "Name: ${details?.name ?: "-"}")
         Text(text = "Number: ${details?.phoneNumber ?: "-"}")
         Text(text = "Email: ${details?.email ?: "-"}")
@@ -180,7 +181,6 @@ private fun loadContactDetails(
         ContactsContract.Contacts._ID,
         ContactsContract.Contacts.DISPLAY_NAME,
         ContactsContract.Contacts.PHOTO_URI,
-        ContactsContract.Contacts.PHOTO_ID  // Add PHOTO_ID like in XML version
     )
 
     resolver.query(contactUri, contactsProjection, null, null, null)?.use { c: Cursor ->
@@ -272,10 +272,19 @@ private fun loadContactDetails(
     }
 
     // Load contact photo as Bitmap if URI is available
-    val contactBitmap = photoUri?.let { uriString ->
+    var contactBitmap: Bitmap? = null
+    contactBitmap = photoUri?.let { uriString ->
         try {
-            val uri = Uri.parse(uriString)
-            MediaStore.Images.Media.getBitmap(resolver, uri)
+            val uri = uriString.toUri()
+            // Use ImageDecoder on API 28+, fallback to openInputStream + BitmapFactory
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val src = ImageDecoder.createSource(resolver, uri)
+                ImageDecoder.decodeBitmap(src)
+            } else {
+                resolver.openInputStream(uri)?.use { stream ->
+                    BitmapFactory.decodeStream(stream)
+                }
+            }
         } catch (e: IOException) {
             null
         }
