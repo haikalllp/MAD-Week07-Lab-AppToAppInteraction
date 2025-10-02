@@ -9,7 +9,7 @@ import androidx.core.net.toUri
 
 fun openMap(context: Context){
     val intent = Intent(Intent.ACTION_VIEW,
-        "geo:37.7749,-122.4194".toUri())
+        "geo:0,0?q=-32.00521012889965, 115.8920247119055(Curtin University)".toUri())
     try{
         context.startActivity(intent)
     }
