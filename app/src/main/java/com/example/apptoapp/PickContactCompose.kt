@@ -5,9 +5,7 @@ import android.content.pm.PackageManager
 import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.ImageDecoder
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
 import android.widget.Toast
@@ -17,6 +15,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -24,8 +23,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,9 +36,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.example.apptoapp.ui.theme.ApptoAppTheme
@@ -120,30 +126,112 @@ fun PickContactScreen() {
             Text("Pick a Contact")
         }
 
-        Spacer(Modifier.height(24.dp))
-
         // make a local copy of contactDetails for null-safety
         val details = contactDetails
 
-        // Show the contact photo if available, otherwise show a text placeholder
+        Spacer(Modifier.height(24.dp))
+
+        // Contact Photo Section
+        // Show the contact photo if available, otherwise show a placeholder
         if (details?.contactImageBitmap != null) {
             Image(
                 bitmap = details.contactImageBitmap.asImageBitmap(),
                 contentDescription = "Contact Photo",
-                modifier = Modifier.size(120.dp)
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(RectangleShape)
             )
         } else {
-            // Simple text placeholder when no photo is available
-            Text(text = "No Photo")
+            // Placeholder when no photo is available
+            Spacer(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(RectangleShape)
+                    .background(Color.LightGray)
+            )
         }
+
+        Spacer(Modifier.height(24.dp))
+
+        // Name Section
+        Text(
+            text = "Name",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = details?.name ?: "Name will appear here",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         Spacer(Modifier.height(16.dp))
 
-        Text(text = "Name: ${details?.name ?: "-"}")
-        Text(text = "Number: ${details?.phoneNumber ?: "-"}")
-        Text(text = "Email: ${details?.email ?: "-"}")
-        Text(text = "Date of Birth: ${details?.dateOfBirth ?: "-"}")
-        Text(text = "Postal Address: ${details?.postalAddress ?: "-"}")
+        // Number Section
+        Text(
+            text = "Number",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = details?.phoneNumber ?: "Number will appear here",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        // Email Section
+        Text(
+            text = "Email",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = details?.email ?: "Email will appear here",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        // Date of Birth Section
+        Text(
+            text = "Date of Birth",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = details?.dateOfBirth ?: "Date of Birth will appear here",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        // Postal Address Section
+        Text(
+            text = "Postal Address",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = details?.postalAddress ?: "Postal Address will appear here",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -255,15 +343,14 @@ private fun loadContactDetails(
     }
 
     // Load contact photo as Bitmap if URI is available
-    var contactBitmap: Bitmap? = null
-    contactBitmap = photoUri?.let { uriString ->
+    val contactBitmap: Bitmap? = photoUri?.let { uriString ->
         try {
             val uri = uriString.toUri()
             // Convert URI to Bitmap
             resolver.openInputStream(uri)?.use { stream ->
                 BitmapFactory.decodeStream(stream)
             }
-        } catch (e: IOException) {
+        } catch (_: IOException) {
             null
         }
     }
