@@ -146,7 +146,7 @@ class PickContact : AppCompatActivity() {
                     }
                 }
                 
-                // Query for date of birth (this is an event instead of a direct field)
+                // Query for date of birth
                 val eventProjection = arrayOf(
                     ContactsContract.CommonDataKinds.Event.START_DATE,
                     ContactsContract.CommonDataKinds.Event.TYPE
@@ -154,6 +154,7 @@ class PickContact : AppCompatActivity() {
                 val eventCursor = contentResolver.query(
                     ContactsContract.Data.CONTENT_URI,
                     eventProjection,
+                    // This uses MIMETYPE instead to ensure it only get events of type birthday
                     "${ContactsContract.CommonDataKinds.Event.CONTACT_ID}=? AND ${ContactsContract.Data.MIMETYPE}=? AND ${ContactsContract.CommonDataKinds.Event.TYPE}=?",
                     arrayOf(contactId, ContactsContract.CommonDataKinds.Event.CONTENT_ITEM_TYPE, ContactsContract.CommonDataKinds.Event.TYPE_BIRTHDAY.toString()),
                     null
@@ -199,11 +200,11 @@ class PickContact : AppCompatActivity() {
                 imgContact.setImageBitmap(bitmap)
             } catch (e: IOException) {
                 // If loading fails, set a default placeholder
-                imgContact.setImageResource(android.R.drawable.ic_menu_gallery)
+                imgContact.setImageResource(R.mipmap.ic_launcher)
             }
         } else {
             // No photo available, set a default placeholder
-            imgContact.setImageResource(android.R.drawable.ic_menu_gallery)
+            imgContact.setImageResource(R.mipmap.ic_launcher)
         }
     }
 }
