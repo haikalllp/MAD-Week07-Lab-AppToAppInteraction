@@ -15,6 +15,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import android.Manifest
@@ -73,14 +74,14 @@ class PickContact : AppCompatActivity() {
     // 3c) Safely load all contact details
     private fun loadContactDetails(contactUri: Uri) {
         val contactDetails = getContactDetails(contactUri)
-        
+
         // Update UI with all contact details
         txtName.text = contactDetails.name ?: "No name"
         txtNumber.text = contactDetails.phoneNumber ?: "No number on file"
         txtEmail.text = contactDetails.email ?: "No email on file"
         txtDateOfBirth.text = contactDetails.dateOfBirth ?: "No date of birth on file"
         txtPostalAddress.text = contactDetails.postalAddress ?: "No postal address on file"
-        
+
         // Set contact photo bitmap if available
         if (contactDetails.contactImageBitmap != null) {
             imgContact.setImageBitmap(contactDetails.contactImageBitmap)
@@ -89,7 +90,7 @@ class PickContact : AppCompatActivity() {
             imgContact.setImageResource(R.mipmap.ic_launcher)
         }
     }
-    
+
     // Function to retrieve all contact details
     private fun getContactDetails(contactUri: Uri): ContactDetails {
         var name: String? = null
@@ -98,7 +99,7 @@ class PickContact : AppCompatActivity() {
         var dateOfBirth: String? = null
         var postalAddress: String? = null
         var contactImageUri: String? = null
-        
+
         // Query the Contacts table first to get CONTACT_ID, DISPLAY_NAME, and PHOTO_URI
         val contactsProjection = arrayOf(
             ContactsContract.Contacts._ID,
@@ -126,14 +127,14 @@ class PickContact : AppCompatActivity() {
                     arrayOf(contactId),
                     null
                 )
-                
+
                 phoneCursor?.use { pc ->
                     if (pc.moveToFirst()) {
                         phoneNumber = pc.getString(pc.getColumnIndexOrThrow(
                             ContactsContract.CommonDataKinds.Phone.NUMBER))
                     }
                 }
-                
+
                 // Query for email address
                 val emailProjection = arrayOf(ContactsContract.CommonDataKinds.Email.ADDRESS)
                 val emailCursor = contentResolver.query(
@@ -143,14 +144,14 @@ class PickContact : AppCompatActivity() {
                     arrayOf(contactId),
                     null
                 )
-                
+
                 emailCursor?.use { ec ->
                     if (ec.moveToFirst()) {
                         email = ec.getString(ec.getColumnIndexOrThrow(
                             ContactsContract.CommonDataKinds.Email.ADDRESS))
                     }
                 }
-                
+
                 // Query for date of birth
                 val eventProjection = arrayOf(
                     ContactsContract.CommonDataKinds.Event.START_DATE,
@@ -164,14 +165,14 @@ class PickContact : AppCompatActivity() {
                     arrayOf(contactId, ContactsContract.CommonDataKinds.Event.CONTENT_ITEM_TYPE, ContactsContract.CommonDataKinds.Event.TYPE_BIRTHDAY.toString()),
                     null
                 )
-                
+
                 eventCursor?.use { evc ->
                     if (evc.moveToFirst()) {
                         dateOfBirth = evc.getString(evc.getColumnIndexOrThrow(
                             ContactsContract.CommonDataKinds.Event.START_DATE))
                     }
                 }
-                
+
                 // Query for postal address
                 val postalProjection = arrayOf(
                     ContactsContract.CommonDataKinds.StructuredPostal.FORMATTED_ADDRESS
@@ -183,7 +184,7 @@ class PickContact : AppCompatActivity() {
                     arrayOf(contactId),
                     null
                 )
-                
+
                 postalCursor?.use { pc ->
                     if (pc.moveToFirst()) {
                         postalAddress = pc.getString(pc.getColumnIndexOrThrow(
@@ -192,11 +193,11 @@ class PickContact : AppCompatActivity() {
                 }
             }
         }
-        
+
         // Load contact photo as Bitmap if URI is available
         val contactBitmap = contactImageUri?.let { uriString ->
             try {
-                val uri = Uri.parse(uriString)
+                val uri = uriString.toUri()
                 MediaStore.Images.Media.getBitmap(contentResolver, uri)
             } catch (e: IOException) {
                 null
@@ -206,5 +207,4 @@ class PickContact : AppCompatActivity() {
         // Return all details and set them in ContactDetails object
         return ContactDetails(name, phoneNumber, email, dateOfBirth, postalAddress, contactImageUri, contactBitmap)
     }
-    
 }
