@@ -160,3 +160,11 @@ private fun loadNameAndNumber(
     }
     return name to number
 }
+
+@Preview(showBackground = true)
+@Composable
+fun PickContactScreenPreview() {
+    ApptoAppTheme {
+        PickContactScreen()
+    }
+}
