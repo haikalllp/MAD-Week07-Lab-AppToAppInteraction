@@ -81,8 +81,13 @@ class PickContact : AppCompatActivity() {
         txtDateOfBirth.text = contactDetails.dateOfBirth ?: "No date of birth on file"
         txtPostalAddress.text = contactDetails.postalAddress ?: "No postal address on file"
         
-        // Load contact photo if available
-        loadContactPhoto(contactDetails.contactImageUri)
+        // Set contact photo bitmap if available
+        if (contactDetails.contactImageBitmap != null) {
+            imgContact.setImageBitmap(contactDetails.contactImageBitmap)
+        } else {
+            // No photo available, set a default placeholder
+            imgContact.setImageResource(R.mipmap.ic_launcher)
+        }
     }
     
     // Function to retrieve all contact details
@@ -188,23 +193,18 @@ class PickContact : AppCompatActivity() {
             }
         }
         
-        return ContactDetails(name, phoneNumber, email, dateOfBirth, postalAddress, contactImageUri)
+        // Load contact photo as Bitmap if URI is available
+        val contactBitmap = contactImageUri?.let { uriString ->
+            try {
+                val uri = Uri.parse(uriString)
+                MediaStore.Images.Media.getBitmap(contentResolver, uri)
+            } catch (e: IOException) {
+                null
+            }
+        }
+
+        // Return all details and set them in ContactDetails object
+        return ContactDetails(name, phoneNumber, email, dateOfBirth, postalAddress, contactImageUri, contactBitmap)
     }
     
-    // Function to load contact photo from URI into ImageView
-    private fun loadContactPhoto(photoUri: String?) {
-        if (photoUri != null) {
-            try {
-                val uri = Uri.parse(photoUri)
-                val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, uri)
-                imgContact.setImageBitmap(bitmap)
-            } catch (e: IOException) {
-                // If loading fails, set a default placeholder
-                imgContact.setImageResource(R.mipmap.ic_launcher)
-            }
-        } else {
-            // No photo available, set a default placeholder
-            imgContact.setImageResource(R.mipmap.ic_launcher)
-        }
-    }
 }

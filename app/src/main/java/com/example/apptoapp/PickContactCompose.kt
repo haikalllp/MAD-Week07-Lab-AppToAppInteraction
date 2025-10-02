@@ -62,7 +62,6 @@ fun PickContactScreen() {
     // UI state contactDetails for the contact details object
     var contactDetails by remember { mutableStateOf<ContactDetails?>(null) }
 
-
     // Launcher: pick a contact (returns a Uri)
     val pickContact = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickContact(),
@@ -74,8 +73,20 @@ fun PickContactScreen() {
                     // Query for all contact details
                     // Load contact details using the provided contactUri and then set the state
                     val details = loadContactDetails(context.contentResolver, contactUri)
-                    contactDetails = details
-                    if (details.name == null && details.phoneNumber == null) {
+                    
+                    // Create a new ContactDetails object to ensure proper state update
+                    val newDetails = ContactDetails(
+                        name = details.name,
+                        phoneNumber = details.phoneNumber,
+                        email = details.email,
+                        dateOfBirth = details.dateOfBirth,
+                        postalAddress = details.postalAddress,
+                        contactImageUri = details.contactImageUri,
+                        contactImageBitmap = details.contactImageBitmap
+                    )
+                    
+                    contactDetails = newDetails
+                    if (newDetails.name == null && newDetails.phoneNumber == null) {
                         Toast.makeText(context, "No details found", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
@@ -123,18 +134,21 @@ fun PickContactScreen() {
 
         // Display contact photo if available, otherwise show default placeholder
         val details = contactDetails
-        val contactBitmap = details?.contactImageBitmap
         
-        if (contactBitmap != null) {
+        if (details?.contactImageBitmap != null) {
             Image(
-                bitmap = contactBitmap.asImageBitmap(),
+                bitmap = details.contactImageBitmap.asImageBitmap(),
                 contentDescription = "Contact Photo",
                 modifier = Modifier.size(120.dp)
             )
         } else {
-            // Use a simple placeholder text instead of loading bitmap in composable
-            Text(
-                text = "No Photo",
+            // No photo available, show default placeholder
+            Image(
+                bitmap = BitmapFactory.decodeResource(
+                    context.resources,
+                    R.mipmap.ic_launcher
+                ).asImageBitmap(),
+                contentDescription = "Default Contact Photo",
                 modifier = Modifier.size(120.dp)
             )
         }
@@ -165,7 +179,8 @@ private fun loadContactDetails(
     val contactsProjection = arrayOf(
         ContactsContract.Contacts._ID,
         ContactsContract.Contacts.DISPLAY_NAME,
-        ContactsContract.Contacts.PHOTO_URI
+        ContactsContract.Contacts.PHOTO_URI,
+        ContactsContract.Contacts.PHOTO_ID  // Add PHOTO_ID like in XML version
     )
 
     resolver.query(contactUri, contactsProjection, null, null, null)?.use { c: Cursor ->
